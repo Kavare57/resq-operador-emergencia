@@ -99,10 +99,10 @@ resq-operador-emergencia/
 
 ## 🔧 Configuración Git
 
-- **Usuario:** Kavare57
+- **Usuario:** Ernesto Quintana (Kavare57)
 - **Email:** equintanap@unicartagena.edu.co
-- **Rama principal:** master
-- **Commit inicial:** Documentación y configuración
+- **Rama principal:** main
+- **Commits iniciales:** Documentación y configuración
 
 ## 🚀 Próximos Pasos
 

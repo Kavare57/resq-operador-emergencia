@@ -4,7 +4,7 @@
 
 Si descubres una vulnerabilidad de seguridad, **POR FAVOR NO** la reportes públicamente en GitHub Issues.
 
-En cambio, envía un correo a: `security@resq-app.com` (o usa el email del responsable)
+En cambio, envía un correo a: `equintanap@unicartagena.edu.co`
 
 Incluye:
 - Descripción detallada de la vulnerabilidad

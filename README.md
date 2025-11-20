@@ -210,7 +210,7 @@ Este proyecto es parte de ResQ y está bajo licencia privada.
 
 ## 👥 Autores
 
-- **William Peñaranda** - Desarrollo principal
+- **Ernesto Quintana** - Desarrollo principal
 
 ## 📞 Soporte
 

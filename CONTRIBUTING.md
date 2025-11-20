@@ -126,3 +126,8 @@ Por favor respeta:
 ## 🙏 Agradecimientos
 
 ¡Agradecemos tu contribución! Todas las contribuciones son valiosas, grandes o pequeñas.
+
+---
+
+**Mantendores del proyecto:**
+- **Ernesto Quintana** (@Kavare57)
