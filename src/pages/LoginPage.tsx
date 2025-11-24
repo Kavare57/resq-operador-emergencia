@@ -23,8 +23,22 @@ export default function LoginPage() {
         // Guardar token
         localStorage.setItem('access_token', authData.access_token)
         
-        // Crear un objeto de usuario básico con la información disponible
+        // Decodificar token para obtener ID y otros datos
+        const tokenParts = authData.access_token.split('.')
+        let userId = null
+        
+        if (tokenParts.length === 3) {
+          try {
+            const decoded = JSON.parse(atob(tokenParts[1]))
+            userId = decoded.sub || decoded.id || decoded.user_id
+          } catch (err) {
+            console.error('Error decodificando token:', err)
+          }
+        }
+        
+        // Crear un objeto de usuario con la información disponible
         const userData = {
+          id: userId || email, // Usar email como fallback para id
           email: email,
           nombre: email.split('@')[0], // Usar parte del email como nombre temporal
           apellido: '',

@@ -14,9 +14,11 @@ ResQ Operador de Emergencia es una interfaz web diseñada para que los operadore
 
 - ✅ **Autenticación segura** - Login con JWT y sesiones protegidas
 - ✅ **Dashboard interactivo** - Interfaz moderna con Tailwind CSS
-- ✅ **Cola de emergencias** - Visualización en tiempo real de solicitudes
-- ✅ **Videollamadas** - Integración con LiveKit para comunicación
-- ✅ **Gestión de recursos** - Asignación de ambulancias y equipos
+- ✅ **Cola de emergencias en tiempo real** - Websocket para actualizaciones instantáneas
+- ✅ **Videollamadas LiveKit** - Comunicación segura con solicitantes
+- ✅ **Valoración de emergencias** - Formulario de evaluación integrado
+- ✅ **Sistema de despacho de ambulancias** - Mapa interactivo con ubicaciones y distancias
+- ✅ **Gestión de recursos** - Asignación automática de ambulancias más cercanas
 - ✅ **Responsive Design** - Funciona en desktop, tablet y móvil
 
 ## 🛠️ Stack Tecnológico
@@ -99,30 +101,40 @@ npm run lint
 
 ```
 src/
-├── components/          # Componentes reutilizables
-│   ├── common/         # Componentes comunes (Header, Footer, etc)
-│   └── dashboard/      # Componentes del dashboard
-├── pages/              # Páginas principales
+├── components/              # Componentes reutilizables
+│   ├── common/             # Componentes comunes (Header, Footer, etc)
+│   ├── dashboard/          # Dashboard con emergencias en vivo
+│   ├── despacho/           # Sistema de despacho de ambulancias
+│   │   ├── DespachadorAmbulancia.tsx  # Interfaz principal de despacho
+│   │   └── MapaAmbulancia.tsx         # Mapa interactivo con Leaflet
+│   └── sala/               # Componentes de sala LiveKit
+│       ├── LlamadaLiveKit.tsx         # Videollamada con solicitante
+│       ├── FormularioValoracion.tsx   # Evaluación de emergencia
+│       ├── SolicitudEmergencia.tsx    # Datos de la solicitud
+│       └── FormularioValoracionEnLlamada.tsx
+├── pages/                   # Páginas principales
 │   ├── LoginPage.tsx
-│   └── DashboardPage.tsx
-├── context/            # Context API para estado global
+│   ├── DashboardPage.tsx
+│   ├── SalaLiveKitPage.tsx
+│   └── DespachadorPage.tsx
+├── context/                 # Context API para estado global
 │   ├── AuthContext.tsx
 │   └── EmergenciaContext.tsx
-├── hooks/              # Hooks personalizados
-│   ├── useApi.ts
-│   ├── useWebSocket.ts
+├── hooks/                   # Hooks personalizados
 │   └── useWebSocketEmergencias.ts
-├── services/           # Servicios de API y externos
-│   ├── api.ts
+├── services/                # Servicios de API y externos
+│   ├── api.ts              # Cliente Axios con interceptores
+│   ├── websocketClient.ts  # Gestor de conexiones WebSocket
+│   ├── logger.ts           # Sistema de logging
 │   ├── emergenciaService.ts
 │   ├── loginService.ts
 │   ├── operadorService.ts
-│   └── websocket.ts
-├── types/              # Tipos TypeScript
-├── utils/              # Funciones utilitarias
-├── App.tsx             # Componente principal
-├── main.tsx            # Punto de entrada
-└── index.css           # Estilos globales
+│   └── ambulanciaService.ts
+├── types/                   # Tipos TypeScript
+├── utils/                   # Funciones utilitarias
+├── App.tsx                  # Componente principal
+├── main.tsx                 # Punto de entrada
+└── index.css                # Estilos globales
 ```
 
 ## 🔐 Autenticación
@@ -155,20 +167,48 @@ El proyecto usa una paleta de colores personalizada en `src/core/constants/color
 - Secondary: Tonos neutrales
 - Success/Warning/Error: Estados
 
+## 🎯 Flujo de Trabajo
+
+El operador de emergencia sigue este flujo:
+
+1. **Autenticación** - Login con credenciales
+2. **Dashboard** - Visualiza emergencias en tiempo real (WebSocket)
+3. **Llamada con Solicitante** - Se conecta vía LiveKit para evaluar la emergencia
+4. **Valoración** - Completa el formulario de evaluación (síntomas, localización, etc.)
+5. **Despacho de Ambulancia** - Sistema de mapa interactivo:
+   - Muestra ambulancias disponibles
+   - Calcula distancia automática (Haversine)
+   - Selecciona la más cercana
+   - Asigna operadores (ambulancia y emergencia)
+6. **Seguimiento** - Monitorea el estado de la orden de despacho
+
 ## 🔗 API Endpoints
 
 ### Autenticación
 - `POST /auth/login` - Login de operador
-- `POST /auth/refresh` - Refrescar token
 
 ### Emergencias
-- `GET /emergencias` - Listar emergencias
-- `POST /emergencias/{id}/asignar` - Asignar ambulancia
-- `PUT /emergencias/{id}/estado` - Actualizar estado
+- `GET /emergencias` - Listar emergencias (WebSocket para actualizaciones)
+- `POST /valoraciones` - Registrar valoración de emergencia
+- `POST /despachar-ambulancia` - Emitir orden de despacho
+- `PUT /salas` - Unirse a sala de videollamada
+
+### Ambulancias
+- `GET /ambulancias` - Listar ambulancias disponibles
+- `GET /ambulancias/{id}` - Detalles de una ambulancia
 
 ### Operadores
 - `GET /operadores/me` - Datos del operador actual
-- `GET /operadores/{id}` - Datos de un operador
+
+## 🗺️ Características del Sistema de Despacho
+
+- **Mapa Interactivo** - Visualización con Leaflet
+- **Iconos Personalizados** - Emergencias (naranja 🚨) y Ambulancias (azul 🚑)
+- **Cálculo de Distancias** - Fórmula Haversine para distancia real
+- **Auto-selección** - Ambulancia más cercana seleccionada automáticamente
+- **Panel de Información** - Detalles de ambulancia seleccionada
+- **Despacho en Uno Click** - Asignación rápida de recursos
+
 
 ## 🚨 Troubleshooting
 
@@ -186,14 +226,21 @@ Comprueba que:
 
 ## 📝 Notas de Desarrollo
 
-### Cambios Recientes
-- Refactor de estructura de directorios
-- Mejoría en manejo de WebSocket
-- Integración con LiveKit para videollamadas
+### Cambios Recientes (v1.1.0)
+- ✨ Sistema completo de despacho de ambulancias
+- ✨ Integración de mapa interactivo con Leaflet
+- ✨ Cálculo automático de distancias (Haversine)
+- ✨ Auto-selección de ambulancia más cercana
+- ✨ Componentes de valoración en llamada
+- ✨ Sistema de WebSocket mejorado
+- ✨ Logging centralizado para debugging
+- 🔧 Refactorización de servicios API
+- 📦 Nuevos tipos TypeScript para entidades
 
 ### Problemas Conocidos
 - livekit_client 2.5.3 tiene issues en Android (Flutter)
 - WebSocket puede desconectarse en conexiones lentas
+- En redes con alta latencia, el mapa puede tardar en renderizar
 
 ## 🤝 Contribuciones
 

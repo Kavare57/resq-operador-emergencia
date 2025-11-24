@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { EmergenciaProvider } from './context/EmergenciaContext'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import DespachadorPage from './pages/DespachadorPage'
 import './App.css'
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/despacho" element={<DespachadorPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>

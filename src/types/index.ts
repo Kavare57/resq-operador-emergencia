@@ -28,20 +28,29 @@ export interface DecodedToken {
 // Emergency Types (Solicitud del backend)
 export interface Emergencia {
   id?: string | number;
+  solicitud?: {
+    id?: number | string;
+    solicitante?: Solicitante;
+    fechaHora?: string;
+    ubicacion?: Ubicacion;
+  };
   solicitante: Solicitante;
   ubicacion: Ubicacion;
   fechaHora: string;
-  // Campos opcionales que pueden venir del WebSocket
-  numero_emergencia?: string;
+  // Campos de valoración
+  estado?: 'CREADA' | 'ASIGNADA' | 'EN_PROGRESO' | 'RESUELTA' | 'CANCELADA';
+  tipoAmbulancia?: 'BASICA' | 'MEDICALIZADA';
+  nivelPrioridad?: 'BAJA' | 'MEDIA' | 'ALTA';
   descripcion?: string;
+  id_operador?: number | string;
+  // Campos opcionales
+  numero_emergencia?: string;
   tipo?: string;
   prioridad?: 'baja' | 'media' | 'alta' | 'crítica';
-  estado?: 'pendiente' | 'asignada' | 'en_progreso' | 'resuelta' | 'cancelada';
   fecha_creacion?: string;
   fecha_asignacion?: string;
   operador_asignado?: User;
   ambulancias_asignadas?: Ambulancia[];
-  // Campos del WebSocket
   room?: string;
   server_url?: string;
   timestamp?: string;
@@ -71,12 +80,22 @@ export interface Solicitante {
 }
 
 export interface Ambulancia {
-  id: string;
-  numero_unidad: string;
-  estado: 'disponible' | 'en_camino' | 'en_escena' | 'en_transporte' | 'disponible_en_hospital';
-  operador: User;
-  ubicacion: Ubicacion;
-  tipo: 'basica' | 'intermedia' | 'avanzada';
+  id: number | string;
+  placa?: string;
+  numero_unidad?: string;
+  disponibilidad?: boolean;
+  estado?: 'disponible' | 'en_camino' | 'en_escena' | 'en_transporte' | 'disponible_en_hospital';
+  operador?: User;
+  tipoAmbulancia?: 'BASICA' | 'MEDICALIZADA' | 'basica' | 'intermedia' | 'avanzada';
+  tipo?: 'basica' | 'intermedia' | 'avanzada';
+  ubicacion: {
+    id?: number;
+    latitud: number;
+    longitud: number;
+    ciudad?: string;
+    direccion?: string;
+    fechaHora?: string;
+  };
 }
 
 // Queue Types
@@ -101,3 +120,50 @@ export interface PaginatedResponse<T> {
   page_size: number;
   total_pages: number;
 }
+
+// Sala Types (LiveKit)
+export interface Sala {
+  nombre: string;
+  personas_conectadas: number;
+  capacidad: number;
+}
+
+export interface SalaActiva {
+  name: string; // Nombre de la sala (ej: "emergencia-123")
+  personas_conectadas: string; // Formato "X/2"
+}
+
+export interface CredencialesSala {
+  token: string;
+  identity: string;
+  room: string;
+  server_url: string;
+}
+
+// Valoración de Emergencia
+export interface ValoracionEmergencia {
+  solicitud_id: number
+  tipoAmbulancia: 'BASICA' | 'MEDICALIZADA'
+  nivelPrioridad: 'BAJA' | 'MEDIA' | 'ALTA'
+  descripcion: string
+  id_operador: number
+  solicitante_id: number
+}
+
+export interface ValoracionResponse {
+  emergencia_id: number
+  estado: string
+  ambulancia_asignada?: {
+    id: number
+    numero_unidad: string
+    ubicacion: Ubicacion
+  }
+}
+
+export interface DespachadorAmbulanciaPayload {
+  emergencia_id: number
+  ambulancia_id: number
+  operador_ambulancia_id: number
+  operador_emergencia_id: number
+}
+
