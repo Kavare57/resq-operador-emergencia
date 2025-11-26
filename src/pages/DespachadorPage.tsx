@@ -43,11 +43,21 @@ export default function DespachadorPage() {
       setEmergencia(emergenciaConUbicacion)
       setIdAmbulanciaClosest(state.id_ambulancia_cercana)
       
+      // Log para verificar que id_ambulancia_cercana llega desde el state
+      console.log('🚑 [DESPACHO] id_ambulancia_cercana recibido desde state:', state.id_ambulancia_cercana)
+      console.log('🚑 [DESPACHO] State completo:', state)
+      
       // Guardar en localStorage para referencia
       localStorage.setItem('sala_credenciales', JSON.stringify({
         emergenciaId: emergenciaConUbicacion.id,
         id_ambulancia_cercana: state.id_ambulancia_cercana,
       }))
+      
+      console.log('🚑 [DESPACHO] Guardado en localStorage:', {
+        emergenciaId: emergenciaConUbicacion.id,
+        id_ambulancia_cercana: state.id_ambulancia_cercana,
+      })
+      
       return
     }
 
@@ -55,11 +65,24 @@ export default function DespachadorPage() {
     const credencialesStr = localStorage.getItem('sala_credenciales')
     if (credencialesStr) {
       try {
-        const credenciales = JSON.parse(credencialesStr) as CredencialesSala & { emergenciaId?: number }
+        const credenciales = JSON.parse(credencialesStr) as CredencialesSala & { 
+          emergenciaId?: number
+          id_ambulancia_cercana?: number
+        }
+        
+        console.log('🚑 [DESPACHO] Credenciales desde localStorage:', credenciales)
         
         if (!credenciales.emergenciaId) {
           setError('No se encontró el ID de la emergencia')
           return
+        }
+
+        // Recuperar id_ambulancia_cercana del localStorage
+        if (credenciales.id_ambulancia_cercana !== undefined) {
+          setIdAmbulanciaClosest(credenciales.id_ambulancia_cercana)
+          console.log('🚑 [DESPACHO] id_ambulancia_cercana recuperado de localStorage:', credenciales.id_ambulancia_cercana)
+        } else {
+          console.warn('⚠️ [DESPACHO] id_ambulancia_cercana no encontrado en localStorage')
         }
 
         // Obtener emergencia desde localStorage
@@ -127,8 +150,12 @@ export default function DespachadorPage() {
 
       // Despachar ambulancia
       console.log(`🚑 [DESPACHO] Despachando ambulancia ${ambulancia.id} para emergencia ${emergencia.id}`)
-      console.log(`🚑 [DESPACHO] Ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
+      console.log(`🚑 [DESPACHO] Ambulancia sugerida por backend: ${idAmbulanciaClosest} (tipo: ${typeof idAmbulanciaClosest}, valor exacto: ${JSON.stringify(idAmbulanciaClosest)})`)
       console.log(`🚑 [DESPACHO] Ambulancia seleccionada: ${ambulancia.id}`)
+      
+      if (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) {
+        console.error('❌ [DESPACHO] ERROR: idAmbulanciaClosest es undefined/null - el valor se perdió en algún punto del flujo')
+      }
       
       if (idAmbulanciaClosest && ambulancia.id !== idAmbulanciaClosest) {
         console.warn(`⚠️ [DESPACHO] ADVERTENCIA: Se está despachando ambulancia ${ambulancia.id} pero el backend sugirió ${idAmbulanciaClosest}`)

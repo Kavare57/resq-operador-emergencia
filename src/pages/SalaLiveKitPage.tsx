@@ -110,21 +110,34 @@ export default function SalaLiveKitPage() {
       if (response.success && response.data) {
         // La respuesta tiene: { emergencia: {...}, id_ambulancia_cercana: ... }
         const emergenciaCreada = (response.data as any).emergencia
+        const idAmbulanciaCercana = (response.data as any).id_ambulancia_cercana
+        
+        // Log para verificar que id_ambulancia_cercana está presente
+        console.log('🚑 [VALORACION] id_ambulancia_cercana recibido:', idAmbulanciaCercana)
+        console.log('🚑 [VALORACION] Respuesta completa:', response.data)
         
         if (emergenciaCreada && emergenciaCreada.id) {
-          // Guardar en localStorage
+          // Guardar en localStorage incluyendo id_ambulancia_cercana
           localStorage.setItem('sala_credenciales', JSON.stringify({
             ...credenciales,
             emergenciaId: emergenciaCreada.id,
+            id_ambulancia_cercana: idAmbulanciaCercana,
           }))
+          
+          console.log('🚑 [VALORACION] Guardado en localStorage:', {
+            emergenciaId: emergenciaCreada.id,
+            id_ambulancia_cercana: idAmbulanciaCercana,
+          })
           
           // Ir a despacho
           navigate('/despacho', {
             state: {
               emergencia: emergenciaCreada,
-              id_ambulancia_cercana: (response.data as any).id_ambulancia_cercana,
+              id_ambulancia_cercana: idAmbulanciaCercana,
             },
           })
+          
+          console.log('🚑 [VALORACION] Navegando a despacho con id_ambulancia_cercana:', idAmbulanciaCercana)
         }
       } else {
         throw new Error(response.error || 'Error valorando emergencia')

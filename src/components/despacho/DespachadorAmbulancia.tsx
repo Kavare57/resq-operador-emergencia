@@ -41,6 +41,10 @@ export default function DespachadorAmbulancia({
     const cargarAmbulancia = async () => {
       try {
         setCargandoAmbulancia(true)
+        
+        // Log cuando se recibe idAmbulanciaClosest
+        console.log('🚑 [DESPACHO] DespachadorAmbulancia recibió idAmbulanciaClosest:', idAmbulanciaClosest, '(tipo:', typeof idAmbulanciaClosest, ')')
+        
         const response = await ambulanciaService.obtenerAmbulancia()
         
         if (response.success && response.data) {
@@ -49,6 +53,8 @@ export default function DespachadorAmbulancia({
             (amb: any) => amb.disponibilidad === true && amb.tipoAmbulancia === emergencia.tipoAmbulancia
           )
           
+          console.log('🚑 [DESPACHO] Ambulancias disponibles:', ambulanciasDisponibles.map((a: any) => ({ id: a.id, tipo: a.tipoAmbulancia })))
+          
           setAmbulancias(ambulanciasDisponibles)
           
           // Seleccionar automáticamente la ambulancia más cercana
@@ -56,21 +62,33 @@ export default function DespachadorAmbulancia({
           if (ambulanciasDisponibles.length > 0) {
             let ambulanciaMasCercana: Ambulancia | null = null
             
-            // Primero intentar usar la que el backend sugirió (calculada con ubicaciones en tiempo real)
-            if (idAmbulanciaClosest) {
+            // PRIMERO: Intentar usar la que el backend sugirió (calculada con ubicaciones en tiempo real)
+            // Solo usar fallback si idAmbulanciaClosest es undefined o null
+            if (idAmbulanciaClosest !== undefined && idAmbulanciaClosest !== null) {
+              console.log(`🔍 [DESPACHO] Buscando ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
+              
               ambulanciaMasCercana = ambulanciasDisponibles.find(
                 (amb: Ambulancia) => amb.id === idAmbulanciaClosest
               ) || null
               
               if (ambulanciaMasCercana) {
-                console.log(`✅ [DESPACHO] Usando ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
+                console.log(`✅ [DESPACHO] Ambulancia sugerida por backend encontrada: ${idAmbulanciaClosest}`)
               } else {
-                console.warn(`⚠️ [DESPACHO] Ambulancia ${idAmbulanciaClosest} sugerida por backend no está disponible`)
+                console.error(`❌ [DESPACHO] ERROR: Ambulancia ${idAmbulanciaClosest} sugerida por backend NO está en la lista de disponibles`)
+                console.log('🚑 [DESPACHO] IDs de ambulancias disponibles:', ambulanciasDisponibles.map((a: any) => a.id))
+                // NO seleccionar otra ambulancia automáticamente si la sugerida no está disponible
+                // Esto fuerza al usuario a ver el error y tomar acción consciente
+                setError(`La ambulancia ${idAmbulanciaClosest} sugerida por el sistema no está disponible. Por favor selecciona una ambulancia manualmente.`)
+                setCargandoAmbulancia(false)
+                return
               }
+            } else {
+              console.warn('⚠️ [DESPACHO] idAmbulanciaClosest es undefined/null, usando fallback de cálculo de distancia')
             }
             
-            // Si no se encontró la sugerida, calcular la más cercana basándose en ubicaciones
-            if (!ambulanciaMasCercana && emergencia.ubicacion?.latitud && emergencia.ubicacion?.longitud) {
+            // FALLBACK: Solo calcular la más cercana si idAmbulanciaClosest es undefined/null
+            if (!ambulanciaMasCercana && (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) && emergencia.ubicacion?.latitud && emergencia.ubicacion?.longitud) {
+              console.log('🔍 [DESPACHO] Calculando ambulancia más cercana usando fallback (sin sugerencia del backend)')
               let distanciaMinima = Infinity
 
               ambulanciasDisponibles.forEach((amb: Ambulancia) => {
@@ -89,18 +107,21 @@ export default function DespachadorAmbulancia({
               })
               
               if (ambulanciaMasCercana) {
-                console.log(`✅ [DESPACHO] Calculada ambulancia más cercana: ${ambulanciaMasCercana.id} (${distanciaMinima.toFixed(2)} km)`)
+                console.log(`✅ [DESPACHO] Calculada ambulancia más cercana (fallback): ${ambulanciaMasCercana.id} (${distanciaMinima.toFixed(2)} km)`)
               }
             }
             
-            // Si aún no hay selección, usar la primera disponible
-            if (!ambulanciaMasCercana && ambulanciasDisponibles.length > 0) {
+            // ÚLTIMO RECURSO: Solo usar la primera disponible si NO hay idAmbulanciaClosest definido
+            if (!ambulanciaMasCercana && (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) && ambulanciasDisponibles.length > 0) {
               ambulanciaMasCercana = ambulanciasDisponibles[0]
-              console.log(`⚠️ [DESPACHO] Usando primera ambulancia disponible: ${ambulanciaMasCercana.id}`)
+              console.log(`⚠️ [DESPACHO] Usando primera ambulancia disponible (último recurso): ${ambulanciaMasCercana.id}`)
             }
 
             if (ambulanciaMasCercana) {
+              console.log('🚑 [DESPACHO] Ambulancia seleccionada:', ambulanciaMasCercana.id)
               setAmbulanciaSeleccionada(ambulanciaMasCercana)
+            } else {
+              console.error('❌ [DESPACHO] No se pudo seleccionar ninguna ambulancia')
             }
           }
           
