@@ -77,7 +77,7 @@ VITE_LIVEKIT_URL=wss://resq-poyiq9j7.livekit.cloud
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5173`
+La aplicación estará disponible en `http://localhost:3000`
 
 ## 🚀 Desarrollo
 

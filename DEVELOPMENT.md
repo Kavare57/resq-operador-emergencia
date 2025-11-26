@@ -58,7 +58,7 @@ npm run lint
 npm run dev
 ```
 
-La aplicación estará disponible en: `http://localhost:5173`
+La aplicación estará disponible en: `http://localhost:3000`
 
 El servidor tiene:
 - ♻️ **Hot Module Replacement (HMR)** - Recarga en tiempo real

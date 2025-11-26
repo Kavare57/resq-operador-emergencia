@@ -105,7 +105,12 @@ export function useWebSocketEmergencias(options: UseWebSocketEmergenciasOptions 
         console.log('🚑 Contenido completo:', JSON.stringify(message, null, 2))
         const ubicMsg = message as unknown as UbicacionAmbulanciaMessage
         if (ubicMsg.latitud && ubicMsg.longitud) {
-          const ambulanciaId = ubicMsg.id_ambulancia || 1
+          // Validar que id_ambulancia esté presente
+          if (!ubicMsg.id_ambulancia) {
+            console.warn('⚠️ [UBICACIÓN AMBULANCIA] Mensaje sin id_ambulancia, ignorando:', ubicMsg)
+            break
+          }
+          const ambulanciaId = ubicMsg.id_ambulancia
           console.log(`🚑 [UBICACIÓN AMBULANCIA] Ambulancia ID ${ambulanciaId} - lat=${ubicMsg.latitud}, lng=${ubicMsg.longitud}`)
           setAmbulanciasUbicaciones(prev => {
             const newMap = new Map(prev)
