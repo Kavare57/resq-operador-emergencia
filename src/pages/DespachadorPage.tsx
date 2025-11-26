@@ -4,6 +4,7 @@ import { authService, ambulanciaService } from '../services/api'
 import { NavBar, Card } from '../components/common'
 import { DespachadorAmbulancia } from '../components/despacho'
 import { Emergencia, Ambulancia, CredencialesSala } from '../types'
+import { useEmergencias } from '../context/EmergenciaContext'
 
 interface LocationState {
   emergencia?: Emergencia
@@ -13,6 +14,7 @@ interface LocationState {
 export default function DespachadorPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { ambulanciasUbicaciones } = useEmergencias()
   const [emergencia, setEmergencia] = useState<Emergencia | null>(null)
   const [idAmbulanciaClosest, setIdAmbulanciaClosest] = useState<number | undefined>(undefined)
   const [cargando, setCargando] = useState(false)
@@ -118,11 +120,16 @@ export default function DespachadorPage() {
         throw new Error('No se pudo obtener el ID del operador')
       }
 
+      // Validar que la ambulancia tenga operador asignado
+      if (!ambulancia.id_operador_ambulancia) {
+        throw new Error('La ambulancia seleccionada no tiene un operador asignado. Por favor selecciona otra ambulancia.')
+      }
+
       // Despachar ambulancia
       const response = await ambulanciaService.despacharAmbulancia({
         emergencia_id: emergencia.id as number,
         ambulancia_id: ambulancia.id as number,
-        operador_ambulancia_id: 0, // Se establecerá en el backend
+        operador_ambulancia_id: ambulancia.id_operador_ambulancia,
         operador_emergencia_id: operadorEmergenciaId,
       })
 
@@ -204,6 +211,7 @@ export default function DespachadorPage() {
               onDespacho={handleDespacho}
               cargando={cargando}
               idAmbulanciaClosest={idAmbulanciaClosest}
+              ambulanciasUbicaciones={ambulanciasUbicaciones}
             />
           </div>
         )}

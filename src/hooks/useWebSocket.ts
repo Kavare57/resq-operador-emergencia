@@ -9,6 +9,7 @@ interface UseWebSocketOptions {
   onError?: (error: string) => void
   httpBaseUrl?: string
   infoEndpoint?: string
+  queryParams?: Record<string, string>
 }
 
 /**
@@ -69,7 +70,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       return
     }
 
-    wsService.current = new WebSocketService(httpBaseUrl, infoEndpoint)
+    wsService.current = new WebSocketService(httpBaseUrl, infoEndpoint, options.queryParams)
 
     try {
       await wsService.current.connect(handleMessage, handleConnect, handleDisconnect, handleError)
@@ -77,7 +78,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       const errorMsg = err instanceof Error ? err.message : 'Error conectando WebSocket'
       handleError(errorMsg)
     }
-  }, [httpBaseUrl, infoEndpoint, handleMessage, handleConnect, handleDisconnect, handleError])
+  }, [httpBaseUrl, infoEndpoint, options.queryParams, handleMessage, handleConnect, handleDisconnect, handleError])
 
   const disconnect = useCallback(() => {
     wsService.current?.disconnect()

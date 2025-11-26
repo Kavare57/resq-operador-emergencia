@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authService, salaService } from '../services/api'
-import { useWebSocketEmergencias } from '../hooks/useWebSocketEmergencias'
 import { useEmergencias } from '../context/EmergenciaContext'
 import { NavBar, Card } from '../components/common'
 import { LlamadaLiveKit } from '../components/sala'
@@ -21,8 +20,7 @@ export interface ValoracionEmergencia {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const { isConnected: wsConnected, error: wsError, disconnect: wsDisconnect } = useWebSocketEmergencias()
-  const { emergencias } = useEmergencias()
+  const { emergencias, wsConnected, wsError } = useEmergencias()
   const [conectadoAWebSocket, setConectadoAWebSocket] = useState(true)
   const [reconectando, setReconectando] = useState(false)
   const [uniendose, setUniendose] = useState<string | null>(null)

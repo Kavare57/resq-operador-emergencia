@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { Emergencia } from '../types'
+import { useWebSocketEmergencias } from '../hooks/useWebSocketEmergencias'
+import { AmbulanciaUbicacion } from '../types/websocket'
 
 interface EmergenciaContextType {
   emergencias: Emergencia[]
@@ -9,6 +11,9 @@ interface EmergenciaContextType {
   selectEmergencia: (emergencia: Emergencia | null) => void
   updateEmergencia: (id: string, emergencia: Partial<Emergencia>) => void
   clearEmergencias: () => void
+  ambulanciasUbicaciones: Map<number, AmbulanciaUbicacion>
+  wsConnected: boolean
+  wsError: string | null
 }
 
 const EmergenciaContext = createContext<EmergenciaContextType | undefined>(undefined)
@@ -46,6 +51,12 @@ export function EmergenciaProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedEmergencia])
 
+  // WebSocket global - se conecta una sola vez y recibe los callbacks
+  const { ambulanciasUbicaciones, isConnected: wsConnected, error: wsError } = useWebSocketEmergencias({
+    addEmergencia,
+    updateEmergencia
+  })
+
   const clearEmergencias = useCallback(() => {
     setEmergencias([])
     setSelectedEmergencia(null)
@@ -59,6 +70,9 @@ export function EmergenciaProvider({ children }: { children: ReactNode }) {
     selectEmergencia,
     updateEmergencia,
     clearEmergencias,
+    ambulanciasUbicaciones,
+    wsConnected,
+    wsError: wsError || null,
   }
 
   return <EmergenciaContext.Provider value={value}>{children}</EmergenciaContext.Provider>

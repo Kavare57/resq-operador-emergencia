@@ -13,10 +13,12 @@ class WebSocketService {
   private reconnectDelay = 3000
   private infoEndpoint: string
   private isManuallyDisconnected = false
+  private queryParams: Record<string, string> = {}
 
-  constructor(httpBaseUrl: string, infoEndpoint: string = '/atender-emergencias/websocket-info') {
+  constructor(httpBaseUrl: string, infoEndpoint: string = '/atender-emergencias/websocket-info', queryParams?: Record<string, string>) {
     this.httpBaseUrl = httpBaseUrl
     this.infoEndpoint = infoEndpoint
+    this.queryParams = queryParams || {}
   }
 
   /**
@@ -67,7 +69,13 @@ class WebSocketService {
         if (!this.wsUrl) {
           this.wsUrl = await this.fetchWebSocketUrl()
         }
-        const uri = this.wsUrl
+        let uri = this.wsUrl
+
+        // Agregar query params si existen
+        if (Object.keys(this.queryParams).length > 0) {
+          const params = new URLSearchParams(this.queryParams)
+          uri = `${uri}?${params.toString()}`
+        }
 
         console.log(`🔗 Conectando a WebSocket: ${uri}`)
         console.log(`📍 Desde origen: ${typeof window !== 'undefined' ? window.location.origin : 'Node.js'}`)

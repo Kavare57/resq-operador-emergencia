@@ -86,6 +86,7 @@ export interface Ambulancia {
   disponibilidad?: boolean;
   estado?: 'disponible' | 'en_camino' | 'en_escena' | 'en_transporte' | 'disponible_en_hospital';
   operador?: User;
+  id_operador_ambulancia?: number | null;
   tipoAmbulancia?: 'BASICA' | 'MEDICALIZADA' | 'basica' | 'intermedia' | 'avanzada';
   tipo?: 'basica' | 'intermedia' | 'avanzada';
   ubicacion: {

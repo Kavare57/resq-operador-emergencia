@@ -3,12 +3,14 @@ import { Card } from '../common'
 import { Emergencia, Ambulancia } from '../../types'
 import { ambulanciaService } from '../../services/api'
 import MapaAmbulancia from './MapaAmbulancia'
+import { AmbulanciaUbicacion } from '../../types/websocket'
 
 interface DespachadorAmbulanciaProps {
   emergencia: Emergencia
   onDespacho: (ambulancia: Ambulancia) => void
   cargando?: boolean
   idAmbulanciaClosest?: number
+  ambulanciasUbicaciones?: Map<number, AmbulanciaUbicacion>
 }
 
 export default function DespachadorAmbulancia({
@@ -16,6 +18,7 @@ export default function DespachadorAmbulancia({
   onDespacho,
   cargando = false,
   idAmbulanciaClosest,
+  ambulanciasUbicaciones,
 }: DespachadorAmbulanciaProps) {
   const [ambulancias, setAmbulancias] = useState<Ambulancia[]>([])
   const [ambulanciaSeleccionada, setAmbulanciaSeleccionada] = useState<Ambulancia | null>(null)
@@ -87,6 +90,38 @@ export default function DespachadorAmbulancia({
 
     cargarAmbulancia()
   }, [emergencia.tipoAmbulancia, emergencia.ubicacion])
+
+  // Actualizar ubicaciones de ambulancias en tiempo real desde WebSocket
+  useEffect(() => {
+    console.log('🔄 useEffect ambulanciasUbicaciones ejecutado')
+    console.log('🔄 ambulanciasUbicaciones size:', ambulanciasUbicaciones?.size)
+    console.log('🔄 Ambulancias actuales:', ambulancias.length)
+    
+    if (ambulanciasUbicaciones && ambulanciasUbicaciones.size > 0) {
+      console.log('✅ Actualizando ubicaciones de ambulancias...')
+      setAmbulancias(prevAmbulancias => {
+        const updated = prevAmbulancias.map(amb => {
+          const ubicacionWs = ambulanciasUbicaciones.get(Number(amb.id))
+          if (ubicacionWs) {
+            console.log(`  ✅ Actualizando ambulancia ${amb.id}: ${ubicacionWs.latitud}, ${ubicacionWs.longitud}`)
+            return {
+              ...amb,
+              ubicacion: {
+                ...amb.ubicacion,
+                latitud: ubicacionWs.latitud,
+                longitud: ubicacionWs.longitud,
+              }
+            }
+          }
+          return amb
+        })
+        console.log('✅ Ambulancias actualizadas:', updated.length)
+        return updated
+      })
+    } else {
+      console.log('⚠️ No hay ubicaciones del WebSocket para actualizar')
+    }
+  }, [ambulanciasUbicaciones])
 
   const handleDespacho = () => {
     if (ambulanciaSeleccionada) {
