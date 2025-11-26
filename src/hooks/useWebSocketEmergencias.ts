@@ -1,5 +1,5 @@
 import { useWebSocket } from './useWebSocket'
-import { WebSocketMessage, InfoAmbulanciasMessage, AmbulanciaUbicacion } from '../types/websocket'
+import { WebSocketMessage, InfoAmbulanciasMessage, UbicacionAmbulanciaMessage, AmbulanciaUbicacion } from '../types/websocket'
 import { Emergencia } from '../types'
 import { useCallback, useState } from 'react'
 
@@ -98,6 +98,29 @@ export function useWebSocketEmergencias(options: UseWebSocketEmergenciasOptions 
           console.log('🚑 Map actualizado, tamaño:', newMap.size)
         } else {
           console.warn('⚠️ Mensaje info_ambulancias sin array de ambulancias')
+        }
+        break
+
+      case 'ubicacion_ambulancia':
+        console.log('🚑 Mensaje ubicacion_ambulancia recibido!')
+        console.log('🚑 Contenido completo:', JSON.stringify(message, null, 2))
+        const ubicMsg = message as unknown as UbicacionAmbulanciaMessage
+        if (ubicMsg.latitud && ubicMsg.longitud) {
+          console.log(`🚑 Ubicación ambulancia óptima: lat=${ubicMsg.latitud}, lng=${ubicMsg.longitud}`)
+          // Actualizar la ambulancia óptima (asumimos id 1 si no viene en el mensaje)
+          const ambulanciaId = ubicMsg.id_ambulancia || 1
+          setAmbulanciasUbicaciones(prev => {
+            const newMap = new Map(prev)
+            newMap.set(ambulanciaId, {
+              id: ambulanciaId,
+              latitud: ubicMsg.latitud,
+              longitud: ubicMsg.longitud
+            })
+            console.log('🚑 Ambulancia óptima actualizada en Map, tamaño:', newMap.size)
+            return newMap
+          })
+        } else {
+          console.warn('⚠️ Mensaje ubicacion_ambulancia sin coordenadas válidas')
         }
         break
 

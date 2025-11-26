@@ -104,16 +104,14 @@ export default function DashboardPage() {
   }
 
   const handleDesconectarWebSocket = async () => {
-    console.log('Desconectando del WebSocket manualmente...')
-    wsDisconnect()
+    console.log('WebSocket es manejado globalmente por EmergenciaProvider')
     setConectadoAWebSocket(false)
   }
 
   const handleReconectarWebSocket = async () => {
-    console.log('Reconectando al WebSocket...')
+    console.log('WebSocket se reconecta automáticamente')
     setReconectando(true)
     try {
-      // El WebSocket se reconecta automáticamente
       setConectadoAWebSocket(true)
     } catch (err) {
       console.error('Error reconectando:', err)

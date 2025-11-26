@@ -12,13 +12,20 @@ export interface WebSocketMessage<T = unknown> {
 }
 
 export interface WebSocketEmergenciaMessage extends WebSocketMessage<Emergencia> {
-  type: 'nueva_solicitud' | 'emergencia_actualizada' | 'info_ambulancias' | string
+  type: 'nueva_solicitud' | 'emergencia_actualizada' | 'info_ambulancias' | 'ubicacion_ambulancia' | string
 }
 
 export interface AmbulanciaUbicacion {
   id: number
   latitud: number
   longitud: number
+}
+
+export interface UbicacionAmbulanciaMessage extends WebSocketMessage {
+  tipo: 'ubicacion_ambulancia'
+  latitud: number
+  longitud: number
+  id_ambulancia?: number
 }
 
 export interface InfoAmbulanciasMessage extends WebSocketMessage {
