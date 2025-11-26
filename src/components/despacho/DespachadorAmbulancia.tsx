@@ -52,26 +52,56 @@ export default function DespachadorAmbulancia({
           setAmbulancias(ambulanciasDisponibles)
           
           // Seleccionar automáticamente la ambulancia más cercana
-          if (ambulanciasDisponibles.length > 0 && emergencia.ubicacion?.latitud && emergencia.ubicacion?.longitud) {
-            let ambulanciaMasCercana = ambulanciasDisponibles[0]
-            let distanciaMinima = Infinity
-
-            ambulanciasDisponibles.forEach((amb: Ambulancia) => {
-              if (amb.ubicacion?.latitud && amb.ubicacion?.longitud) {
-                const distancia = calcularDistancia(
-                  emergencia.ubicacion!.latitud,
-                  emergencia.ubicacion!.longitud,
-                  amb.ubicacion.latitud,
-                  amb.ubicacion.longitud
-                )
-                if (distancia < distanciaMinima) {
-                  distanciaMinima = distancia
-                  ambulanciaMasCercana = amb
-                }
+          // Priorizar la que viene del backend (idAmbulanciaClosest) que usa ubicaciones en tiempo real
+          if (ambulanciasDisponibles.length > 0) {
+            let ambulanciaMasCercana: Ambulancia | null = null
+            
+            // Primero intentar usar la que el backend sugirió (calculada con ubicaciones en tiempo real)
+            if (idAmbulanciaClosest) {
+              ambulanciaMasCercana = ambulanciasDisponibles.find(
+                (amb: Ambulancia) => amb.id === idAmbulanciaClosest
+              ) || null
+              
+              if (ambulanciaMasCercana) {
+                console.log(`✅ [DESPACHO] Usando ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
+              } else {
+                console.warn(`⚠️ [DESPACHO] Ambulancia ${idAmbulanciaClosest} sugerida por backend no está disponible`)
               }
-            })
+            }
+            
+            // Si no se encontró la sugerida, calcular la más cercana basándose en ubicaciones
+            if (!ambulanciaMasCercana && emergencia.ubicacion?.latitud && emergencia.ubicacion?.longitud) {
+              let distanciaMinima = Infinity
 
-            setAmbulanciaSeleccionada(ambulanciaMasCercana)
+              ambulanciasDisponibles.forEach((amb: Ambulancia) => {
+                if (amb.ubicacion?.latitud && amb.ubicacion?.longitud) {
+                  const distancia = calcularDistancia(
+                    emergencia.ubicacion!.latitud,
+                    emergencia.ubicacion!.longitud,
+                    amb.ubicacion.latitud,
+                    amb.ubicacion.longitud
+                  )
+                  if (distancia < distanciaMinima) {
+                    distanciaMinima = distancia
+                    ambulanciaMasCercana = amb
+                  }
+                }
+              })
+              
+              if (ambulanciaMasCercana) {
+                console.log(`✅ [DESPACHO] Calculada ambulancia más cercana: ${ambulanciaMasCercana.id} (${distanciaMinima.toFixed(2)} km)`)
+              }
+            }
+            
+            // Si aún no hay selección, usar la primera disponible
+            if (!ambulanciaMasCercana && ambulanciasDisponibles.length > 0) {
+              ambulanciaMasCercana = ambulanciasDisponibles[0]
+              console.log(`⚠️ [DESPACHO] Usando primera ambulancia disponible: ${ambulanciaMasCercana.id}`)
+            }
+
+            if (ambulanciaMasCercana) {
+              setAmbulanciaSeleccionada(ambulanciaMasCercana)
+            }
           }
           
           if (ambulanciasDisponibles.length === 0) {
@@ -89,7 +119,7 @@ export default function DespachadorAmbulancia({
     }
 
     cargarAmbulancia()
-  }, [emergencia.tipoAmbulancia, emergencia.ubicacion])
+  }, [emergencia.tipoAmbulancia, emergencia.ubicacion, idAmbulanciaClosest])
 
   // Actualizar ubicaciones de ambulancias en tiempo real desde WebSocket
   useEffect(() => {

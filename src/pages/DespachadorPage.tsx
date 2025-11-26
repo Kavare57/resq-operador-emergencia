@@ -126,6 +126,14 @@ export default function DespachadorPage() {
       }
 
       // Despachar ambulancia
+      console.log(`🚑 [DESPACHO] Despachando ambulancia ${ambulancia.id} para emergencia ${emergencia.id}`)
+      console.log(`🚑 [DESPACHO] Ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
+      console.log(`🚑 [DESPACHO] Ambulancia seleccionada: ${ambulancia.id}`)
+      
+      if (idAmbulanciaClosest && ambulancia.id !== idAmbulanciaClosest) {
+        console.warn(`⚠️ [DESPACHO] ADVERTENCIA: Se está despachando ambulancia ${ambulancia.id} pero el backend sugirió ${idAmbulanciaClosest}`)
+      }
+      
       const response = await ambulanciaService.despacharAmbulancia({
         emergencia_id: emergencia.id as number,
         ambulancia_id: ambulancia.id as number,
