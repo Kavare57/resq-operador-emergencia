@@ -24,6 +24,24 @@ function MapInvalidator() {
   return null
 }
 
+// Componente para centrar el mapa en la ambulancia seleccionada
+function MapCenterer({ ambulanciaSeleccionada }: { ambulanciaSeleccionada?: Ambulancia }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    if (ambulanciaSeleccionada?.ubicacion?.latitud && ambulanciaSeleccionada?.ubicacion?.longitud) {
+      console.log('🗺️ [MAPA] Centrando mapa en ambulancia seleccionada:', ambulanciaSeleccionada.id)
+      map.setView(
+        [ambulanciaSeleccionada.ubicacion.latitud, ambulanciaSeleccionada.ubicacion.longitud],
+        15,
+        { animate: true }
+      )
+    }
+  }, [map, ambulanciaSeleccionada])
+  
+  return null
+}
+
 // Crear icono personalizado para emergencia (naranja)
 const createEmergenciaIcon = () => {
   return L.divIcon({
@@ -117,6 +135,7 @@ export default function MapaAmbulancia({
         />
         
         <MapInvalidator />
+        <MapCenterer ambulanciaSeleccionada={ambulanciaSeleccionada} />
 
         {/* Marcador de emergencia - Naranja */}
         <Marker 

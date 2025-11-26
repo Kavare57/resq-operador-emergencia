@@ -7,7 +7,7 @@ import FormularioValoracionEnLlamada from './FormularioValoracionEnLlamada.tsx'
 interface LlamadaLiveKitProps {
   emergencia: Emergencia
   credenciales: CredencialesSala
-  onValoracionCompleta: (data: any) => void
+  onValoracionCompleta: (data: any, idAmbulanciaCercana?: number) => void
   onTerminar: () => void
 }
 
@@ -205,8 +205,19 @@ function SalaContent({ emergencia, onValoracionCompleta, onTerminar }: Omit<Llam
               solicitudId={Number(emergencia.id)}
               solicitanteNombre={solicitante.nombre}
               solicitanteId={emergencia.solicitante?.id ? Number(emergencia.solicitante.id) : 1}
-              onValoracion={async (data: Emergencia) => {
-                await onValoracionCompleta(data)
+              onValoracion={async (data: Emergencia, idAmbulanciaCercana?: number) => {
+                console.log('🚑 [LLAMADA] ========== onValoracion EJECUTADO ==========')
+                console.log('🚑 [LLAMADA] onValoracion recibido con data:', data)
+                console.log('🚑 [LLAMADA] onValoracion recibido con idAmbulanciaCercana:', idAmbulanciaCercana, '(tipo:', typeof idAmbulanciaCercana, ')')
+                console.log('🚑 [LLAMADA] onValoracionCompleta es:', typeof onValoracionCompleta, onValoracionCompleta)
+                console.log('🚑 [LLAMADA] Llamando a onValoracionCompleta con:', { data, idAmbulanciaCercana })
+                try {
+                  // Pasar tanto la emergencia como el id_ambulancia_cercana
+                  await onValoracionCompleta(data, idAmbulanciaCercana)
+                  console.log('🚑 [LLAMADA] onValoracionCompleta completado exitosamente')
+                } catch (error) {
+                  console.error('🚑 [LLAMADA] ERROR en onValoracionCompleta:', error)
+                }
                 setMostrarValoracion(false)
               }}
               onCancel={() => setMostrarValoracion(false)}
@@ -265,7 +276,11 @@ export default function LlamadaLiveKit(props: LlamadaLiveKitProps) {
     >
       <SalaContent 
         emergencia={props.emergencia}
-        onValoracionCompleta={props.onValoracionCompleta}
+        onValoracionCompleta={async (emergenciaCreada: Emergencia, idAmbulanciaCercana?: number) => {
+          console.log('🚑 [LLAMADALIVEKIT] onValoracionCompleta recibido en componente principal:', { emergenciaCreada, idAmbulanciaCercana })
+          console.log('🚑 [LLAMADALIVEKIT] props.onValoracionCompleta es:', typeof props.onValoracionCompleta)
+          await props.onValoracionCompleta(emergenciaCreada, idAmbulanciaCercana)
+        }}
         onTerminar={props.onTerminar}
       />
     </LiveKitRoom>

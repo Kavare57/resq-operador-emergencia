@@ -88,12 +88,14 @@ export default function DashboardPage() {
     setError(null)
   }
 
-  const handleValoracion = async (emergenciaCreada: Emergencia) => {
+  const handleValoracion = async (emergenciaCreada: Emergencia, idAmbulanciaCercana?: number) => {
     try {
-      // Ir a despacho con la emergencia creada
+      console.log('🚑 [DASHBOARD] handleValoracion recibido con:', { emergenciaCreada, idAmbulanciaCercana })
+      // Ir a despacho con la emergencia creada y id_ambulancia_cercana
       navigate('/despacho', {
         state: {
           emergencia: emergenciaCreada,
+          id_ambulancia_cercana: idAmbulanciaCercana,
         },
       })
     } catch (err) {

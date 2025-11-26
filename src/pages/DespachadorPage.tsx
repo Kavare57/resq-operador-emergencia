@@ -31,6 +31,9 @@ export default function DespachadorPage() {
 
     // Primero, intentar obtener emergencia desde state (viene de SalaLiveKitPage)
     const state = location.state as LocationState | null
+    console.log('🚑 [DESPACHO] useEffect ejecutado, location.state:', state)
+    console.log('🚑 [DESPACHO] location completo:', location)
+    
     if (state?.emergencia) {
       // Asegurarse de que tiene ubicación
       let emergenciaConUbicacion = state.emergencia
@@ -62,7 +65,9 @@ export default function DespachadorPage() {
     }
 
     // Fallback: obtener desde localStorage
+    console.log('🚑 [DESPACHO] No hay state, usando fallback de localStorage')
     const credencialesStr = localStorage.getItem('sala_credenciales')
+    console.log('🚑 [DESPACHO] credencialesStr desde localStorage:', credencialesStr)
     if (credencialesStr) {
       try {
         const credenciales = JSON.parse(credencialesStr) as CredencialesSala & { 

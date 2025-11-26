@@ -89,59 +89,38 @@ export default function SalaLiveKitPage() {
     }
   }
 
-  const handleValoracion = async (data: ValoracionEmergencia) => {
+  const handleValoracion = async (emergenciaCreada: Emergencia, idAmbulanciaCercana?: number) => {
     try {
-      if (!solicitudActual) {
-        throw new Error('No hay solicitud activa')
-      }
-
-      // Obtener id_operador desde localStorage (sin validación de autenticación)
-      const idOperador = Number(localStorage.getItem('id_operador')) || 1
+      console.log('🚑 [VALORACION] ========== handleValoracion EJECUTADO ==========')
+      console.log('🚑 [VALORACION] handleValoracion recibido con emergencia:', emergenciaCreada)
+      console.log('🚑 [VALORACION] handleValoracion recibido con idAmbulanciaCercana:', idAmbulanciaCercana, '(tipo:', typeof idAmbulanciaCercana, ')')
+      console.log('🚑 [VALORACION] Argumentos recibidos:', { emergenciaCreada, idAmbulanciaCercana })
       
-      // Valorar la emergencia
-      const response = await valoracionService.valorarEmergencia({
-        ...data,
-        id_operador: idOperador,
-        solicitante_id: solicitudActual.solicitante?.id || 1,
-      })
-
-      console.log('Respuesta valoración:', response)
-
-      if (response.success && response.data) {
-        // La respuesta tiene: { emergencia: {...}, id_ambulancia_cercana: ... }
-        const emergenciaCreada = (response.data as any).emergencia
-        const idAmbulanciaCercana = (response.data as any).id_ambulancia_cercana
-        
-        // Log para verificar que id_ambulancia_cercana está presente
-        console.log('🚑 [VALORACION] id_ambulancia_cercana recibido:', idAmbulanciaCercana)
-        console.log('🚑 [VALORACION] Respuesta completa:', response.data)
-        
-        if (emergenciaCreada && emergenciaCreada.id) {
-          // Guardar en localStorage incluyendo id_ambulancia_cercana
-          localStorage.setItem('sala_credenciales', JSON.stringify({
-            ...credenciales,
-            emergenciaId: emergenciaCreada.id,
-            id_ambulancia_cercana: idAmbulanciaCercana,
-          }))
-          
-          console.log('🚑 [VALORACION] Guardado en localStorage:', {
-            emergenciaId: emergenciaCreada.id,
-            id_ambulancia_cercana: idAmbulanciaCercana,
-          })
-          
-          // Ir a despacho
-          navigate('/despacho', {
-            state: {
-              emergencia: emergenciaCreada,
-              id_ambulancia_cercana: idAmbulanciaCercana,
-            },
-          })
-          
-          console.log('🚑 [VALORACION] Navegando a despacho con id_ambulancia_cercana:', idAmbulanciaCercana)
-        }
-      } else {
-        throw new Error(response.error || 'Error valorando emergencia')
+      if (!emergenciaCreada || !emergenciaCreada.id) {
+        throw new Error('No se recibió una emergencia válida')
       }
+      
+      // Guardar en localStorage incluyendo id_ambulancia_cercana
+      localStorage.setItem('sala_credenciales', JSON.stringify({
+        ...credenciales,
+        emergenciaId: emergenciaCreada.id,
+        id_ambulancia_cercana: idAmbulanciaCercana,
+      }))
+      
+      console.log('🚑 [VALORACION] Guardado en localStorage:', {
+        emergenciaId: emergenciaCreada.id,
+        id_ambulancia_cercana: idAmbulanciaCercana,
+      })
+      
+      // Ir a despacho
+      navigate('/despacho', {
+        state: {
+          emergencia: emergenciaCreada,
+          id_ambulancia_cercana: idAmbulanciaCercana,
+        },
+      })
+      
+      console.log('🚑 [VALORACION] Navegando a despacho con id_ambulancia_cercana:', idAmbulanciaCercana)
     } catch (err) {
       console.error('Error en valoración:', err)
       setError((err as Error)?.message || 'Error desconocido')
@@ -172,7 +151,18 @@ export default function SalaLiveKitPage() {
           emergencia={solicitudActual}
           credenciales={credenciales}
           onTerminar={handleTerminarLlamada}
-          onValoracionCompleta={handleValoracion}
+          onValoracionCompleta={async (emergenciaCreada: Emergencia, idAmbulanciaCercana?: number) => {
+            console.log('🚑 [SALALIVEKIT] ========== WRAPPER EJECUTADO ==========')
+            console.log('🚑 [SALALIVEKIT] onValoracionCompleta wrapper recibido con emergenciaCreada:', emergenciaCreada)
+            console.log('🚑 [SALALIVEKIT] onValoracionCompleta wrapper recibido con idAmbulanciaCercana:', idAmbulanciaCercana, '(tipo:', typeof idAmbulanciaCercana, ')')
+            console.log('🚑 [SALALIVEKIT] Llamando a handleValoracion con:', { emergenciaCreada, idAmbulanciaCercana })
+            try {
+              await handleValoracion(emergenciaCreada, idAmbulanciaCercana)
+              console.log('🚑 [SALALIVEKIT] handleValoracion completado exitosamente')
+            } catch (error) {
+              console.error('🚑 [SALALIVEKIT] ERROR en handleValoracion:', error)
+            }
+          }}
         />
       </div>
     )

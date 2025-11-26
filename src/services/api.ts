@@ -145,6 +145,18 @@ class ApiClient {
       
       logger.debug('ApiClient', `POST response recibida: ${url}`, { status: response.status })
       
+      // Log detallado de la respuesta para debugging
+      if (url === '/valorar-emergencia') {
+        console.log('🚑 [APICLIENT] ========== RESPUESTA COMPLETA DE /valorar-emergencia ==========')
+        console.log('🚑 [APICLIENT] response.status:', response.status)
+        console.log('🚑 [APICLIENT] response.data:', response.data)
+        console.log('🚑 [APICLIENT] response.data type:', typeof response.data)
+        console.log('🚑 [APICLIENT] response.data keys:', response.data ? Object.keys(response.data) : 'no data')
+        console.log('🚑 [APICLIENT] response.data.emergencia:', (response.data as any)?.emergencia)
+        console.log('🚑 [APICLIENT] response.data.id_ambulancia_cercana:', (response.data as any)?.id_ambulancia_cercana)
+        console.log('🚑 [APICLIENT] JSON.stringify(response.data):', JSON.stringify(response.data, null, 2))
+      }
+      
       // El backend retorna directamente los datos sin envolver en ApiResponse
       // Entonces lo envolvemos aquí
       if (response.status === 200 || response.status === 201) {

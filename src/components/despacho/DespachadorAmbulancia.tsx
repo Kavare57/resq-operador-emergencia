@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../common'
 import { Emergencia, Ambulancia } from '../../types'
-import { ambulanciaService } from '../../services/api'
+import { ambulanciaService, apiClient } from '../../services/api'
 import MapaAmbulancia from './MapaAmbulancia'
-import { AmbulanciaUbicacion } from '../../types/websocket'
 
 interface DespachadorAmbulanciaProps {
   emergencia: Emergencia
   onDespacho: (ambulancia: Ambulancia) => void
   cargando?: boolean
   idAmbulanciaClosest?: number
-  ambulanciasUbicaciones?: Map<number, AmbulanciaUbicacion>
+  ambulanciasUbicaciones?: Map<number, any> // Deprecated - ya no se usa, mantenido para compatibilidad
 }
 
 export default function DespachadorAmbulancia({
@@ -18,7 +17,7 @@ export default function DespachadorAmbulancia({
   onDespacho,
   cargando = false,
   idAmbulanciaClosest,
-  ambulanciasUbicaciones,
+  ambulanciasUbicaciones, // Deprecated - ya no se usa
 }: DespachadorAmbulanciaProps) {
   const [ambulancias, setAmbulancias] = useState<Ambulancia[]>([])
   const [ambulanciaSeleccionada, setAmbulanciaSeleccionada] = useState<Ambulancia | null>(null)
@@ -45,6 +44,14 @@ export default function DespachadorAmbulancia({
         // Log cuando se recibe idAmbulanciaClosest
         console.log('🚑 [DESPACHO] DespachadorAmbulancia recibió idAmbulanciaClosest:', idAmbulanciaClosest, '(tipo:', typeof idAmbulanciaClosest, ')')
         
+        // SIMPLIFICADO: Usar SOLO la ambulancia provista por el backend
+        if (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) {
+          console.error('❌ [DESPACHO] ERROR CRÍTICO: idAmbulanciaClosest no está disponible. El backend debe proporcionar este valor.')
+          setError('Error: No se recibió la ambulancia sugerida por el sistema. Por favor, intenta valorar la emergencia nuevamente.')
+          setCargandoAmbulancia(false)
+          return
+        }
+        
         const response = await ambulanciaService.obtenerAmbulancia()
         
         if (response.success && response.data) {
@@ -55,79 +62,52 @@ export default function DespachadorAmbulancia({
           
           console.log('🚑 [DESPACHO] Ambulancias disponibles:', ambulanciasDisponibles.map((a: any) => ({ id: a.id, tipo: a.tipoAmbulancia })))
           
+          // Buscar SOLO la ambulancia sugerida por el backend
+          const ambulanciaSugerida = ambulanciasDisponibles.find(
+            (amb: Ambulancia) => amb.id === idAmbulanciaClosest
+          )
+          
+          if (!ambulanciaSugerida) {
+            console.error(`❌ [DESPACHO] ERROR: Ambulancia ${idAmbulanciaClosest} sugerida por backend NO está disponible`)
+            console.log('🚑 [DESPACHO] IDs de ambulancias disponibles:', ambulanciasDisponibles.map((a: any) => a.id))
+            setError(`La ambulancia ${idAmbulanciaClosest} sugerida por el sistema no está disponible. Por favor contacta al administrador.`)
+            setCargandoAmbulancia(false)
+            return
+          }
+          
+          console.log(`✅ [DESPACHO] Ambulancia sugerida por backend encontrada y seleccionada: ${idAmbulanciaClosest}`)
+          
+          // Cargar información del operador de ambulancia si está disponible
+          if (ambulanciaSugerida.id_operador_ambulancia) {
+            try {
+              const operadorResponse = await apiClient.get(`/operadores-ambulancia/${ambulanciaSugerida.id_operador_ambulancia}`)
+              
+              if (operadorResponse.success && operadorResponse.data) {
+                const operadorData = operadorResponse.data as any
+                console.log('🚑 [DESPACHO] Operador de ambulancia cargado:', operadorData)
+                // Agregar información del operador a la ambulancia
+                ambulanciaSugerida.operador = {
+                  id: operadorData.id?.toString() || '',
+                  email: operadorData.email || '',
+                  nombre: operadorData.nombre || '',
+                  apellido: operadorData.apellido || '',
+                  rol: 'operador' as const,
+                  estado: 'activo' as const,
+                  licencia: operadorData.licencia, // Agregar licencia al objeto operador
+                } as any
+              }
+            } catch (err) {
+              console.warn('⚠️ [DESPACHO] No se pudo cargar información del operador:', err)
+            }
+          }
+          
+          // Establecer todas las ambulancias disponibles para mostrarlas en el mapa
           setAmbulancias(ambulanciasDisponibles)
           
-          // Seleccionar automáticamente la ambulancia más cercana
-          // Priorizar la que viene del backend (idAmbulanciaClosest) que usa ubicaciones en tiempo real
-          if (ambulanciasDisponibles.length > 0) {
-            let ambulanciaMasCercana: Ambulancia | null = null
-            
-            // PRIMERO: Intentar usar la que el backend sugirió (calculada con ubicaciones en tiempo real)
-            // Solo usar fallback si idAmbulanciaClosest es undefined o null
-            if (idAmbulanciaClosest !== undefined && idAmbulanciaClosest !== null) {
-              console.log(`🔍 [DESPACHO] Buscando ambulancia sugerida por backend: ${idAmbulanciaClosest}`)
-              
-              ambulanciaMasCercana = ambulanciasDisponibles.find(
-                (amb: Ambulancia) => amb.id === idAmbulanciaClosest
-              ) || null
-              
-              if (ambulanciaMasCercana) {
-                console.log(`✅ [DESPACHO] Ambulancia sugerida por backend encontrada: ${idAmbulanciaClosest}`)
-              } else {
-                console.error(`❌ [DESPACHO] ERROR: Ambulancia ${idAmbulanciaClosest} sugerida por backend NO está en la lista de disponibles`)
-                console.log('🚑 [DESPACHO] IDs de ambulancias disponibles:', ambulanciasDisponibles.map((a: any) => a.id))
-                // NO seleccionar otra ambulancia automáticamente si la sugerida no está disponible
-                // Esto fuerza al usuario a ver el error y tomar acción consciente
-                setError(`La ambulancia ${idAmbulanciaClosest} sugerida por el sistema no está disponible. Por favor selecciona una ambulancia manualmente.`)
-                setCargandoAmbulancia(false)
-                return
-              }
-            } else {
-              console.warn('⚠️ [DESPACHO] idAmbulanciaClosest es undefined/null, usando fallback de cálculo de distancia')
-            }
-            
-            // FALLBACK: Solo calcular la más cercana si idAmbulanciaClosest es undefined/null
-            if (!ambulanciaMasCercana && (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) && emergencia.ubicacion?.latitud && emergencia.ubicacion?.longitud) {
-              console.log('🔍 [DESPACHO] Calculando ambulancia más cercana usando fallback (sin sugerencia del backend)')
-              let distanciaMinima = Infinity
-
-              ambulanciasDisponibles.forEach((amb: Ambulancia) => {
-                if (amb.ubicacion?.latitud && amb.ubicacion?.longitud) {
-                  const distancia = calcularDistancia(
-                    emergencia.ubicacion!.latitud,
-                    emergencia.ubicacion!.longitud,
-                    amb.ubicacion.latitud,
-                    amb.ubicacion.longitud
-                  )
-                  if (distancia < distanciaMinima) {
-                    distanciaMinima = distancia
-                    ambulanciaMasCercana = amb
-                  }
-                }
-              })
-              
-              if (ambulanciaMasCercana) {
-                console.log(`✅ [DESPACHO] Calculada ambulancia más cercana (fallback): ${ambulanciaMasCercana.id} (${distanciaMinima.toFixed(2)} km)`)
-              }
-            }
-            
-            // ÚLTIMO RECURSO: Solo usar la primera disponible si NO hay idAmbulanciaClosest definido
-            if (!ambulanciaMasCercana && (idAmbulanciaClosest === undefined || idAmbulanciaClosest === null) && ambulanciasDisponibles.length > 0) {
-              ambulanciaMasCercana = ambulanciasDisponibles[0]
-              console.log(`⚠️ [DESPACHO] Usando primera ambulancia disponible (último recurso): ${ambulanciaMasCercana.id}`)
-            }
-
-            if (ambulanciaMasCercana) {
-              console.log('🚑 [DESPACHO] Ambulancia seleccionada:', ambulanciaMasCercana.id)
-              setAmbulanciaSeleccionada(ambulanciaMasCercana)
-            } else {
-              console.error('❌ [DESPACHO] No se pudo seleccionar ninguna ambulancia')
-            }
-          }
+          // Seleccionar SOLO la ambulancia sugerida por el backend
+          setAmbulanciaSeleccionada(ambulanciaSugerida)
           
-          if (ambulanciasDisponibles.length === 0) {
-            setError('No hay ambulancias disponibles del tipo requerido')
-          }
+          console.log('🚑 [DESPACHO] Ambulancia seleccionada (única opción del backend):', ambulanciaSugerida.id)
         } else {
           setError('Error al cargar las ambulancias')
         }
@@ -142,50 +122,8 @@ export default function DespachadorAmbulancia({
     cargarAmbulancia()
   }, [emergencia.tipoAmbulancia, emergencia.ubicacion, idAmbulanciaClosest])
 
-  // Actualizar ubicaciones de ambulancias en tiempo real desde WebSocket
-  useEffect(() => {
-    console.log('🔄 [MAPA] useEffect ambulanciasUbicaciones ejecutado')
-    console.log('🔄 [MAPA] ambulanciasUbicaciones size:', ambulanciasUbicaciones?.size)
-    console.log('🔄 [MAPA] Ambulancias actuales en estado:', ambulancias.length)
-    
-    if (ambulanciasUbicaciones && ambulanciasUbicaciones.size > 0) {
-      console.log('✅ [MAPA] Actualizando ubicaciones de ambulancias desde WebSocket...')
-      setAmbulancias(prevAmbulancias => {
-        let actualizadas = 0
-        const updated = prevAmbulancias.map(amb => {
-          const ubicacionWs = ambulanciasUbicaciones.get(Number(amb.id))
-          if (ubicacionWs) {
-            const latAnterior = amb.ubicacion?.latitud
-            const lngAnterior = amb.ubicacion?.longitud
-            const latNueva = ubicacionWs.latitud
-            const lngNueva = ubicacionWs.longitud
-            
-            // Solo loguear si la ubicación cambió
-            if (latAnterior !== latNueva || lngAnterior !== lngNueva) {
-              console.log(`  ✅ [MAPA] Ambulancia ${amb.id} actualizada: (${latAnterior?.toFixed(4)}, ${lngAnterior?.toFixed(4)}) → (${latNueva.toFixed(4)}, ${lngNueva.toFixed(4)})`)
-              actualizadas++
-            }
-            
-            return {
-              ...amb,
-              ubicacion: {
-                ...amb.ubicacion,
-                latitud: ubicacionWs.latitud,
-                longitud: ubicacionWs.longitud,
-              }
-            }
-          }
-          return amb
-        })
-        if (actualizadas > 0) {
-          console.log(`✅ [MAPA] ${actualizadas} ambulancia(s) actualizada(s) en el mapa`)
-        }
-        return updated
-      })
-    } else {
-      console.log('⚠️ [MAPA] No hay ubicaciones del WebSocket para actualizar')
-    }
-  }, [ambulanciasUbicaciones])
+  // ELIMINADO: Lógica del WebSocket - ya no se usa
+  // La ubicación de la ambulancia viene directamente de la base de datos
 
   const handleDespacho = () => {
     if (ambulanciaSeleccionada) {
@@ -253,79 +191,61 @@ export default function DespachadorAmbulancia({
 
       {/* Panel de información - Lado derecho (30%) */}
       <div className="w-96 flex flex-col gap-4">
-        {/* Panel de Ambulancia Seleccionada */}
-        <Card className="p-5 flex-1 min-h-0 overflow-y-auto">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Ambulancia Seleccionada</h3>
-
-          {ambulanciaSeleccionada ? (
+        {/* Panel de Información de Ambulancia */}
+        {ambulanciaSeleccionada ? (
+          <Card className="p-5 flex-1 min-h-0 overflow-y-auto">
+            {/* Información Básica de la Ambulancia */}
             <div className="space-y-4">
-              {/* Badge de Más Cercana */}
-              {esMasCercana && (
-                <div className="p-3 bg-orange-100 border border-orange-300 rounded-lg">
-                  <p className="text-sm font-semibold text-orange-800">
-                    🎯 Más cercana
-                    {distanciaAmbulancia && ` (${distanciaAmbulancia.toFixed(2)} km)`}
-                  </p>
+              {/* Placa */}
+              <div>
+                <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-1">Placa</p>
+                <p className="text-lg font-bold text-gray-800">{ambulanciaSeleccionada.placa || `Ambulancia ${ambulanciaSeleccionada.id}`}</p>
+              </div>
+
+              {/* Tipo */}
+              <div>
+                <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-1">Tipo</p>
+                <p className="text-md text-gray-700">
+                  {ambulanciaSeleccionada.tipoAmbulancia === 'BASICA' ? 'Ambulancia Básica' : 'Ambulancia Medicalizada'}
+                </p>
+              </div>
+
+              {/* Información del Operador de Ambulancia */}
+              {ambulanciaSeleccionada.operador && (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-3">Operador de Ambulancia</p>
+                  <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                    {/* Nombre y Apellido */}
+                    <div>
+                      <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">Nombre</p>
+                      <p className="text-md text-blue-800">
+                        {ambulanciaSeleccionada.operador.nombre} {ambulanciaSeleccionada.operador.apellido}
+                      </p>
+                    </div>
+                    
+                    {/* Licencia */}
+                    {(ambulanciaSeleccionada.operador as any).licencia && (
+                      <div>
+                        <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">Número de Licencia</p>
+                        <p className="text-md text-blue-800 font-mono">{(ambulanciaSeleccionada.operador as any).licencia}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-
-              {/* Información de la Ambulancia */}
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                {/* Placa */}
-                <div>
-                  <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Placa</p>
-                  <p className="text-lg font-bold text-gray-800">{ambulanciaSeleccionada.placa || `Ambulancia ${ambulanciaSeleccionada.id}`}</p>
+              
+              {/* Mostrar mensaje si no hay operador asignado */}
+              {!ambulanciaSeleccionada.operador && ambulanciaSeleccionada.id_operador_ambulancia && (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-xs text-gray-500 italic">Información del operador no disponible</p>
                 </div>
-
-                {/* Número de Unidad */}
-                {ambulanciaSeleccionada.numero_unidad && (
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Unidad</p>
-                    <p className="text-md text-gray-700">{ambulanciaSeleccionada.numero_unidad}</p>
-                  </div>
-                )}
-
-                {/* Tipo */}
-                <div>
-                  <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Tipo</p>
-                  <p className="text-md text-gray-700">
-                    {ambulanciaSeleccionada.tipoAmbulancia === 'BASICA' ? 'Ambulancia Básica' : 'Ambulancia Medicalizada'}
-                  </p>
-                </div>
-
-                {/* Estado */}
-                <div>
-                  <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Estado</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-                    <p className="text-md text-gray-700">{ambulanciaSeleccionada.disponibilidad ? 'Disponible' : 'Ocupada'}</p>
-                  </div>
-                </div>
-
-                {/* Ubicación */}
-                {ambulanciaSeleccionada.ubicacion?.latitud && ambulanciaSeleccionada.ubicacion?.longitud && (
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Ubicación</p>
-                    <p className="text-sm text-gray-700 font-mono">
-                      {ambulanciaSeleccionada.ubicacion.latitud.toFixed(4)}, {ambulanciaSeleccionada.ubicacion.longitud.toFixed(4)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Distancia (si no es la más cercana) */}
-                {!esMasCercana && distanciaAmbulancia && (
-                  <div>
-                    <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Distancia</p>
-                    <p className="text-md text-blue-600 font-semibold">{distanciaAmbulancia.toFixed(2)} km</p>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Botón de Despacho */}
               <button
                 onClick={handleDespacho}
                 disabled={cargando || cargandoAmbulancia}
-                className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+                className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
               >
                 {cargando ? (
                   <>
@@ -359,14 +279,16 @@ export default function DespachadorAmbulancia({
                 )}
               </button>
             </div>
-          ) : (
+          </Card>
+        ) : (
+          <Card className="p-5 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-center h-full text-center">
               <div>
-                <p className="text-gray-500 text-sm mb-2">Haz click en una ambulancia en el mapa para seleccionarla</p>
+                <p className="text-gray-500 text-sm">Cargando información de la ambulancia...</p>
               </div>
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
         {/* Panel de Información de Emergencia */}
         <Card className="p-5 flex-shrink-0">

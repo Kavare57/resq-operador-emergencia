@@ -6,7 +6,7 @@ interface FormularioValoracionEnLlamadaProps {
   solicitudId: number
   solicitanteNombre: string
   solicitanteId: number
-  onValoracion: (data: Emergencia) => Promise<void>
+  onValoracion: (data: Emergencia, idAmbulanciaCercana?: number) => Promise<void>
   onCancel: () => void
 }
 
@@ -76,9 +76,19 @@ export default function FormularioValoracionEnLlamada({
         solicitante_id: solicitanteId,
       })
 
-      // Llamar al callback con los datos de la emergencia creada
+      console.log('🚑 [FORMULARIO] Respuesta completa de valorarEmergencia:', response)
+      console.log('🚑 [FORMULARIO] response.data:', response.data)
+      console.log('🚑 [FORMULARIO] response.data keys:', response.data ? Object.keys(response.data) : 'no data')
+
+      // Extraer emergencia e id_ambulancia_cercana de la respuesta
       const emergencia = (response.data as any).emergencia || response.data
-      await onValoracion(emergencia)
+      const idAmbulanciaCercana = (response.data as any).id_ambulancia_cercana
+      
+      console.log('🚑 [FORMULARIO] emergencia:', emergencia)
+      console.log('🚑 [FORMULARIO] id_ambulancia_cercana:', idAmbulanciaCercana, '(tipo:', typeof idAmbulanciaCercana, ')')
+      
+      // Llamar al callback con los datos de la emergencia creada Y el id_ambulancia_cercana
+      await onValoracion(emergencia, idAmbulanciaCercana)
     } catch (err: any) {
       console.error('Error al valorar emergencia:', err)
       setError(err.response?.data?.detail || 'Error al valorar la emergencia. Intenta nuevamente.')
