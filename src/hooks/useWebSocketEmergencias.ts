@@ -83,32 +83,30 @@ export function useWebSocketEmergencias(options: UseWebSocketEmergenciasOptions 
         break
 
       case 'info_ambulancias':
-        console.log('🚑 Mensaje info_ambulancias recibido!')
+        console.log('🚑 [INFO AMBULANCIAS] Mensaje recibido del WebSocket')
         console.log('🚑 Contenido completo:', JSON.stringify(message, null, 2))
         const infoMsg = message as unknown as InfoAmbulanciasMessage
         if (infoMsg.ambulancias) {
-          console.log('🚑 Ubicaciones de ambulancias actualizadas:', infoMsg.ambulancias.length)
-          console.log('🚑 Ambulancias:', infoMsg.ambulancias)
+          console.log(`🚑 [INFO AMBULANCIAS] Actualizando ${infoMsg.ambulancias.length} ubicaciones de ambulancias`)
           const newMap = new Map<number, AmbulanciaUbicacion>()
           infoMsg.ambulancias.forEach(amb => {
-            console.log(`  - Ambulancia ${amb.id}: lat=${amb.latitud}, lng=${amb.longitud}`)
+            console.log(`🚑 [INFO AMBULANCIAS]   - Ambulancia ${amb.id}: lat=${amb.latitud}, lng=${amb.longitud}`)
             newMap.set(amb.id, amb)
           })
           setAmbulanciasUbicaciones(newMap)
-          console.log('🚑 Map actualizado, tamaño:', newMap.size)
+          console.log(`🚑 [INFO AMBULANCIAS] Map actualizado con ${newMap.size} ambulancias`)
         } else {
-          console.warn('⚠️ Mensaje info_ambulancias sin array de ambulancias')
+          console.warn('⚠️ [INFO AMBULANCIAS] Mensaje sin array de ambulancias')
         }
         break
 
       case 'ubicacion_ambulancia':
-        console.log('🚑 Mensaje ubicacion_ambulancia recibido!')
+        console.log('🚑 [UBICACIÓN AMBULANCIA] Mensaje recibido del WebSocket')
         console.log('🚑 Contenido completo:', JSON.stringify(message, null, 2))
         const ubicMsg = message as unknown as UbicacionAmbulanciaMessage
         if (ubicMsg.latitud && ubicMsg.longitud) {
-          console.log(`🚑 Ubicación ambulancia óptima: lat=${ubicMsg.latitud}, lng=${ubicMsg.longitud}`)
-          // Actualizar la ambulancia óptima (asumimos id 1 si no viene en el mensaje)
           const ambulanciaId = ubicMsg.id_ambulancia || 1
+          console.log(`🚑 [UBICACIÓN AMBULANCIA] Ambulancia ID ${ambulanciaId} - lat=${ubicMsg.latitud}, lng=${ubicMsg.longitud}`)
           setAmbulanciasUbicaciones(prev => {
             const newMap = new Map(prev)
             newMap.set(ambulanciaId, {
@@ -116,11 +114,12 @@ export function useWebSocketEmergencias(options: UseWebSocketEmergenciasOptions 
               latitud: ubicMsg.latitud,
               longitud: ubicMsg.longitud
             })
-            console.log('🚑 Ambulancia óptima actualizada en Map, tamaño:', newMap.size)
+            console.log(`🚑 [UBICACIÓN AMBULANCIA] Map actualizado - Ambulancia ${ambulanciaId} ahora en (${ubicMsg.latitud}, ${ubicMsg.longitud})`)
+            console.log(`🚑 [UBICACIÓN AMBULANCIA] Total de ambulancias en Map: ${newMap.size}`)
             return newMap
           })
         } else {
-          console.warn('⚠️ Mensaje ubicacion_ambulancia sin coordenadas válidas')
+          console.warn('⚠️ [UBICACIÓN AMBULANCIA] Mensaje sin coordenadas válidas:', ubicMsg)
         }
         break
 
@@ -129,16 +128,24 @@ export function useWebSocketEmergencias(options: UseWebSocketEmergenciasOptions 
     }
   }, [addEmergencia, updateEmergencia])
 
+  // Obtener id_operador una vez al montar el hook
+  const operadorId = getOperadorId()
+  
   const { isConnected, error, send, disconnect, reconnect } = useWebSocket({
     onMessage: handleWebSocketMessage,
     onConnect: () => {
-      const operadorId = getOperadorId()
       console.log(`✅ Conectado a WebSocket de emergencias con id_operador: ${operadorId}`)
+      console.log(`✅ El operador ${operadorId} está listo para recibir alertas de emergencias y ubicaciones de ambulancias`)
     },
-    onDisconnect: () => console.log('🔌 Desconectado de WebSocket'),
-    onError: (err) => console.error('❌ Error WebSocket:', err),
+    onDisconnect: () => {
+      console.log('🔌 Desconectado de WebSocket de emergencias')
+      console.log(`⚠️ El operador ${operadorId} ya no recibirá actualizaciones en tiempo real`)
+    },
+    onError: (err) => {
+      console.error(`❌ Error WebSocket para operador ${operadorId}:`, err)
+    },
     queryParams: {
-      id_operador: getOperadorId()
+      id_operador: operadorId
     }
   })
 

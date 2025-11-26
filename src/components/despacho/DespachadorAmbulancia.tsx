@@ -93,17 +93,28 @@ export default function DespachadorAmbulancia({
 
   // Actualizar ubicaciones de ambulancias en tiempo real desde WebSocket
   useEffect(() => {
-    console.log('🔄 useEffect ambulanciasUbicaciones ejecutado')
-    console.log('🔄 ambulanciasUbicaciones size:', ambulanciasUbicaciones?.size)
-    console.log('🔄 Ambulancias actuales:', ambulancias.length)
+    console.log('🔄 [MAPA] useEffect ambulanciasUbicaciones ejecutado')
+    console.log('🔄 [MAPA] ambulanciasUbicaciones size:', ambulanciasUbicaciones?.size)
+    console.log('🔄 [MAPA] Ambulancias actuales en estado:', ambulancias.length)
     
     if (ambulanciasUbicaciones && ambulanciasUbicaciones.size > 0) {
-      console.log('✅ Actualizando ubicaciones de ambulancias...')
+      console.log('✅ [MAPA] Actualizando ubicaciones de ambulancias desde WebSocket...')
       setAmbulancias(prevAmbulancias => {
+        let actualizadas = 0
         const updated = prevAmbulancias.map(amb => {
           const ubicacionWs = ambulanciasUbicaciones.get(Number(amb.id))
           if (ubicacionWs) {
-            console.log(`  ✅ Actualizando ambulancia ${amb.id}: ${ubicacionWs.latitud}, ${ubicacionWs.longitud}`)
+            const latAnterior = amb.ubicacion?.latitud
+            const lngAnterior = amb.ubicacion?.longitud
+            const latNueva = ubicacionWs.latitud
+            const lngNueva = ubicacionWs.longitud
+            
+            // Solo loguear si la ubicación cambió
+            if (latAnterior !== latNueva || lngAnterior !== lngNueva) {
+              console.log(`  ✅ [MAPA] Ambulancia ${amb.id} actualizada: (${latAnterior?.toFixed(4)}, ${lngAnterior?.toFixed(4)}) → (${latNueva.toFixed(4)}, ${lngNueva.toFixed(4)})`)
+              actualizadas++
+            }
+            
             return {
               ...amb,
               ubicacion: {
@@ -115,11 +126,13 @@ export default function DespachadorAmbulancia({
           }
           return amb
         })
-        console.log('✅ Ambulancias actualizadas:', updated.length)
+        if (actualizadas > 0) {
+          console.log(`✅ [MAPA] ${actualizadas} ambulancia(s) actualizada(s) en el mapa`)
+        }
         return updated
       })
     } else {
-      console.log('⚠️ No hay ubicaciones del WebSocket para actualizar')
+      console.log('⚠️ [MAPA] No hay ubicaciones del WebSocket para actualizar')
     }
   }, [ambulanciasUbicaciones])
 

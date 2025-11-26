@@ -75,10 +75,14 @@ class WebSocketService {
         if (Object.keys(this.queryParams).length > 0) {
           const params = new URLSearchParams(this.queryParams)
           uri = `${uri}?${params.toString()}`
+          console.log(`🔗 Query params agregados:`, this.queryParams)
         }
 
         console.log(`🔗 Conectando a WebSocket: ${uri}`)
         console.log(`📍 Desde origen: ${typeof window !== 'undefined' ? window.location.origin : 'Node.js'}`)
+        if (this.queryParams.id_operador) {
+          console.log(`👤 Conectando con id_operador: ${this.queryParams.id_operador}`)
+        }
         
         this.ws = new WebSocket(uri)
 
@@ -91,7 +95,10 @@ class WebSocketService {
 
         this.ws.onopen = () => {
           clearTimeout(connectTimeout)
-          console.log('✅ WebSocket conectado!')
+          console.log('✅ WebSocket conectado exitosamente!')
+          if (this.queryParams.id_operador) {
+            console.log(`✅ Operador ${this.queryParams.id_operador} conectado y listo para recibir alertas de emergencias`)
+          }
           this.reconnectAttempts = 0
           onConnect?.()
           resolve()
