@@ -23,6 +23,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
   // Detectar el host correcto desde el navegador
   const httpBaseUrl = options.httpBaseUrl || (() => {
+    // Usar VITE_API_URL si está disponible (producción)
+    const envApiUrl = import.meta.env.VITE_API_URL
+    if (envApiUrl) {
+      // Remover /api si existe y asegurar que no tenga trailing slash
+      const baseUrl = envApiUrl.replace('/api', '').replace(/\/$/, '')
+      return baseUrl
+    }
+    
+    // Fallback para desarrollo local
     if (typeof window !== 'undefined') {
       // Usar el mismo host/puerto del navegador pero convertir a http/https
       const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
