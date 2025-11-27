@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authService, salaService, valoracionService } from '../services/api'
+import { authService, salaService } from '../services/api'
 import { NavBar, Card } from '../components/common'
 import { LlamadaLiveKit } from '../components/sala'
-import { CredencialesSala } from '../types'
+import { CredencialesSala, Emergencia } from '../types'
 import { useWebSocketEmergencias } from '../hooks/useWebSocketEmergencias'
 import { useEmergencias } from '../context/EmergenciaContext'
 

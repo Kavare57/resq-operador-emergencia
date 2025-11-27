@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { Emergencia } from '../types'
 import { useWebSocketEmergencias } from '../hooks/useWebSocketEmergencias'
 import { AmbulanciaUbicacion } from '../types/websocket'

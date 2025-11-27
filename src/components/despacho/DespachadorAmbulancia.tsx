@@ -17,24 +17,24 @@ export default function DespachadorAmbulancia({
   onDespacho,
   cargando = false,
   idAmbulanciaClosest,
-  ambulanciasUbicaciones, // Deprecated - ya no se usa
+  ambulanciasUbicaciones: _ambulanciasUbicaciones, // Deprecated - ya no se usa
 }: DespachadorAmbulanciaProps) {
   const [ambulancias, setAmbulancias] = useState<Ambulancia[]>([])
   const [ambulanciaSeleccionada, setAmbulanciaSeleccionada] = useState<Ambulancia | null>(null)
   const [cargandoAmbulancia, setCargandoAmbulancia] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Calcular distancia entre dos puntos usando la fórmula de Haversine
-  const calcularDistancia = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371 // Radio de la tierra en km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180
-    const dLon = ((lon2 - lon1) * Math.PI) / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c // Distancia en km
-  }
+  // Calcular distancia entre dos puntos usando la fórmula de Haversine (no usada actualmente, mantenida para uso futuro)
+  // const calcularDistancia = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  //   const R = 6371 // Radio de la tierra en km
+  //   const dLat = ((lat2 - lat1) * Math.PI) / 180
+  //   const dLon = ((lon2 - lon1) * Math.PI) / 180
+  //   const a =
+  //     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  //     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  //   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  //   return R * c // Distancia en km
+  // }
 
   useEffect(() => {
     const cargarAmbulancia = async () => {
@@ -133,20 +133,21 @@ export default function DespachadorAmbulancia({
     }
   }
 
-  const esMasCercana = ambulanciaSeleccionada && idAmbulanciaClosest && ambulanciaSeleccionada.id === idAmbulanciaClosest
-  const distanciaAmbulancia =
-    ambulanciaSeleccionada && 
-    emergencia.ubicacion?.latitud && 
-    emergencia.ubicacion?.longitud && 
-    ambulanciaSeleccionada.ubicacion?.latitud && 
-    ambulanciaSeleccionada.ubicacion?.longitud
-      ? calcularDistancia(
-          emergencia.ubicacion.latitud,
-          emergencia.ubicacion.longitud,
-          ambulanciaSeleccionada.ubicacion.latitud,
-          ambulanciaSeleccionada.ubicacion.longitud
-        )
-      : null
+  // Variables calculadas para uso futuro (comentadas para evitar errores de TypeScript)
+  // const esMasCercana = ambulanciaSeleccionada && idAmbulanciaClosest && ambulanciaSeleccionada.id === idAmbulanciaClosest
+  // const distanciaAmbulancia =
+  //   ambulanciaSeleccionada && 
+  //   emergencia.ubicacion?.latitud && 
+  //   emergencia.ubicacion?.longitud && 
+  //   ambulanciaSeleccionada.ubicacion?.latitud && 
+  //   ambulanciaSeleccionada.ubicacion?.longitud
+  //     ? calcularDistancia(
+  //         emergencia.ubicacion.latitud,
+  //         emergencia.ubicacion.longitud,
+  //         ambulanciaSeleccionada.ubicacion.latitud,
+  //         ambulanciaSeleccionada.ubicacion.longitud
+  //       )
+  //     : null
 
   return (
     <div className="flex gap-6 h-full">

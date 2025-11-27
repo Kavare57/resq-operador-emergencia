@@ -7,21 +7,21 @@ const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http:
 
 logger.info('ApiClient', 'Inicializando ApiClient', { baseUrl: API_BASE_URL })
 
-// Función para decodificar JWT
-function decodeToken(token: string): any {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      throw new Error('Token inválido')
-    }
-    
-    const decoded = JSON.parse(atob(parts[1]))
-    return decoded
-  } catch (err) {
-    logger.error('ApiClient', 'Error decodificando token', err)
-    return null
-  }
-}
+// Función para decodificar JWT (no usada actualmente, mantenida para uso futuro)
+// function decodeToken(token: string): any {
+//   try {
+//     const parts = token.split('.')
+//     if (parts.length !== 3) {
+//       throw new Error('Token inválido')
+//     }
+//     
+//     const decoded = JSON.parse(atob(parts[1]))
+//     return decoded
+//   } catch (err) {
+//     logger.error('ApiClient', 'Error decodificando token', err)
+//     return null
+//   }
+// }
 
 class ApiClient {
   private axiosInstance: AxiosInstance
@@ -383,7 +383,7 @@ export const valoracionService = {
 
 // Servicios de Ambulancias
 export const ambulanciaService = {
-  obtenerAmbulancia: async (tipoAmbulancia?: 'BASICA' | 'MEDICALIZADA') => {
+  obtenerAmbulancia: async () => {
     // Llamar sin parámetros y filtrar en frontend
     return apiClient.get(`/ambulancias`)
   },

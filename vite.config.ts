@@ -11,7 +11,5 @@ export default defineConfig({
     open: false,
     cors: true, // Habilitar CORS
   },
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'http://localhost:8000/api'),
-  },
+  // Las variables de entorno VITE_* se inyectan automáticamente por Vite
 })
