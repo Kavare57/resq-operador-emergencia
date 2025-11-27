@@ -26,7 +26,13 @@ class WebSocketService {
    */
   private async fetchWebSocketUrl(): Promise<string> {
     try {
-      const response = await fetch(`${this.httpBaseUrl}${this.infoEndpoint}`)
+      // Normalizar httpBaseUrl e infoEndpoint para evitar doble slash
+      const normalizedBaseUrl = this.httpBaseUrl.replace(/\/$/, '')
+      const normalizedEndpoint = this.infoEndpoint.startsWith('/') 
+        ? this.infoEndpoint 
+        : `/${this.infoEndpoint}`
+      
+      const response = await fetch(`${normalizedBaseUrl}${normalizedEndpoint}`)
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -37,6 +43,9 @@ class WebSocketService {
       }
 
       let uri = data.websocket_url
+
+      // Normalizar la URL para eliminar dobles slashes (excepto después del protocolo)
+      uri = uri.replace(/([^:]\/)\/+/g, '$1')
 
       // Si viene una ruta relativa, construir URL absoluta
       if (uri.startsWith('/')) {
